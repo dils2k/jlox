@@ -180,6 +180,11 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Void visitReturnStmt(Stmt.Return stmt) {
+        throw new Return(evaluate(stmt.value));
+    }
+
+    @Override
     public Object visitAssignExpr(Expr.Assign expr) {
         Object value = evaluate(expr.value);
         environment.assign(expr.name, value);
