@@ -9,6 +9,13 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         METHOD
     }
 
+    private enum ClassType {
+        NONE,
+        CLASS
+    }
+
+    private ClassType currentClass = ClassType.NONE;
+
     private final Interpreter interpreter;
     private final Stack<Map<String, Boolean>> scopes = new Stack<>();
     private FunctionType currentFunction = FunctionType.NONE;
@@ -172,6 +179,10 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitThisExpr(Expr.This expr) {
+        if (currentClass == ClassType.NONE) {
+            Lox.error(expr.keyword, "Can't use this outside of a class");
+            return null;
+        }
         resolveLocal(expr, expr.keyword);
         return null;
     }
@@ -216,14 +227,23 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitClassStmt(Stmt.Class stmt) {
+        ClassType enclosingClass = currentClass;
+        currentClass = ClassType.CLASS;
+
         declare(stmt.name);
+
         beginScope();
         scopes.peek().put("this", true);
+
         for (Stmt.Function method : stmt.methods) {
             resolveFunction(method, FunctionType.METHOD);
         }
+
         endScope();
         define(stmt.name);
+
+        currentClass = enclosingClass;
+
         return null;
     }
 }
